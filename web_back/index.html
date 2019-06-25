@@ -102,23 +102,51 @@
         }
 
 
-        //注册点击事件
-        $('#btn_logout').on('click', function (e) {
-            //事件处理函数
-            e.preventDefault();
-            $.post({
-                url: 'http://localhost:8000/admin/logout',
 
-                success: function (backData) {
-                    // console.log(backData);
-                    if (backData.code == 200) {
-                        window.location.href = './login.html';
+
+
+        $(function () {
+
+            //注册点击事件
+            $('#btn_logout').on('click', function (e) {
+                //事件处理函数
+                e.preventDefault();
+                $.post({
+                    url: 'http://localhost:8000/admin/logout',
+
+                    success: function (backData) {
+                        // console.log(backData);
+                        if (backData.code == 200) {
+                            window.location.href = './login.html';
+                        }
                     }
-                }
+                });
+
+
             });
 
 
+            // 步骤:
+            // 1. 一进到首页, 就应该发送ajax请求, 获取用户信息(个人图片和昵称)
+            // 1. 把这个图片和昵称显示在首页对应的标签的.
+            //     注意的是span标签不要设置text, 应该设置html, 因为他设置的内容里面包含了标签. & nbsp
+
+            $.get({
+                url: 'http://localhost:8000/admin/getuser',
+                success: function (backData) {
+                    console.log(backData);
+
+                    if (backData.code == 200) {
+                        $('.user_info img').attr('src', backData.data.user_pic);
+                        $('.user_info span').html('欢迎&nbsp;&nbsp;' + backData.data.nickname);
+                        $('.user_center_link img').attr('src', backData.data.user_pic);
+                    }
+
+                }
+            });
+
         });
+
 
     </script>
 
