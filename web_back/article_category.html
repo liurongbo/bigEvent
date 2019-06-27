@@ -72,7 +72,7 @@
                 <tfoot>
                     <tr>
                         <td colspan="3" class="text-center">
-                            <a href="#" class="btn btn-success" data-toggle="modal" data-target="#addModal">新增分类</a>
+                            <a href="#" class="btn btn-success btn_add" data-toggle="modal" data-target="#addModal">新增分类</a>
                         </td>
                     </tr>
                 </tfoot>
@@ -89,13 +89,14 @@
                 </div>
                 <div class="modal-body">
                     <form>
+                        <input type="hiddden" class="id" name="id">
                         <div class="form-group">
-                            <label for="recipient-name" class="control-label">分类名称:</label>
-                            <input type="text" class="form-control" id="recipient-name">
+                            <label for="recipient-name" class="control-label ">分类名称:</label>
+                            <input type="text" class="form-control  name" name="name">
                         </div>
                         <div class="form-group">
-                            <label for="message-text" class="control-label">分类别名:</label>
-                            <input type="text" class="form-control" id="recipient-name">
+                            <label for="message-text" class="control-label  ">分类别名:</label>
+                            <input type="text" class="form-control  slug"  name="slug">
                         </div>
                     </form>
                 </div>
@@ -113,22 +114,13 @@
             backdrop: false
         });
 
+
+        // 关闭模态框
         $('#model_shutoff').click(function () {
-            alert('shutoff');
             $('#addModal').modal('hide');
         });
 
-        $('#model_add').click(function () {
-            alert('add');
-            $('#addModal').modal('hide');
-        });
 
-        $('.category_table').delegate('a', 'click', function () {
-            if ($(this).hasClass('btn-info')) {
-                $('#addModal .modal-title').html('修改分类名称');
-                $('#addModal').modal('show');
-            }
-        })      
     </script>
     <!-- 导入模板引擎 -->
     <script src='./js/template-web.js'></script>
@@ -139,8 +131,8 @@
             <td>{{v.name}}</td>
             <td>{{v.slug}}</td>
             <td class="text-center">
-                <a href="javascript:editTr({&quot;id&quot;:&quot;1&quot;,&quot;slug&quot;:&quot;uncategorized&quot;,&quot;name&quot;:&quot;未分类&quot;});" class="btn btn-info btn-xs">编辑</a>
-                <a href="javascript:deleteTr( {{v.id}} );" class="btn btn-danger btn-xs">删除</a>
+                <a href="#" data-id='{{v.id}}' class="btn btn-info btn-xs btn-edit">编辑</a>
+                <a href="#" data-id='{{v.id}}' class="btn btn-danger btn-xs btn-delete">删除</a>
             </td>
         </tr>
         {{/each}}
@@ -149,14 +141,150 @@
     <script>
         $(function () {
 
-            $.get({
-                url: 'http://localhost:8000/admin/category_search',
-                success: function (backData) {
-                    console.log(backData);
-                    var resHtml = template('tmp_coat', backData);
-                    $('tbody').html(resHtml);
-                }
+
+            // 注意: 页面一进来要获取, 新增成功后也要获取, 所以可以搞成一个函数调用.
+            function getCataData() {
+                $.get({
+                    url: 'http://localhost:8000/admin/category_search',
+                    success: function (backData) {
+                        console.log(backData);
+                        var resHtml = template('tmp_coat', backData);
+                        $('tbody').html(resHtml);
+                    }
+                });
+            }
+
+            //页面一进来要获取,发送ajax请求
+            getCataData();
+
+            //注册点击事件
+            $('.btn_add').on('click', function () {
+                //事件处理函数
+                $('#addModal .modal-title').html('新增分类');
+
+                $('#model_add').removeClass('btn-success').text('新增');
+
             });
+
+
+            // 1.给新增按钮设置一个点击事件.
+            //     注意: 以前写静态模板的时候默认有一个点击事件.要么删掉, 要么自己改改.
+            // 2.获取用户输入的类别名称和别名
+            // 3.发送ajax请求
+            // 4.新增成功后, 再重新获取一次文章类别
+            // 注意: 页面一进来要获取, 新增成功后也要获取, 所以可以搞成一个函数调用.
+
+
+            //注册点击事件  给新增按钮设置一个点击事件.
+            $('#model_add').on('click', function () {
+                //事件处理函数\
+                if ($(this).hasClass('btn-success')) {
+
+                    var data1 = $('form').serialize();
+
+
+                    $.post({
+                        url: 'http://localhost:8000/admin/category_edit',
+                        data: data1,
+                        success: function (backData) {
+                            console.log(backData);
+                            if (backData.code == 200) {
+
+                                getCataData();
+                            };
+                        }
+                    });
+
+
+                } else {
+                    // 2.获取用户输入的类别名称和别名
+                    var userName = $('.modal-body .name').val();
+                    var userSlug = $('.modal-body .slug').val();
+
+                    // 3.发送ajax请求
+                    $.post({
+                        url: 'http://localhost:8000/admin/category_add',
+                        data: {
+                            name: userName,
+                            slug: userSlug
+                        },
+                        success: function (backData) {
+                            console.log(backData);
+                            // 4.新增成功后, 再重新获取一次文章类别
+                            if (backData.code == 200) {
+                                getCataData();
+                            }
+                        }
+                    });
+
+
+                };
+                //隐藏模态框
+                $('#addModal').modal('hide');
+
+            });
+
+
+            // 1.给删除按钮们注册事件.使用委托的方式.
+            // 2.删除逻辑里面如何知道删除的是哪一个数据呢 ? 通过id区分.
+            //     搞一个自定义属性data - id来保存id
+            // 3.根据id删除文章类别的接口通过验证没有问题
+            // 4.删除成功后, 重新的再渲染一次数据
+
+            //注册点击事件// 1.给删除按钮们注册事件.使用委托的方式.
+            $('tbody').on('click', '.btn-delete', function () {
+
+                var that = $(this);
+                //事件处理函数
+                if (confirm('你确定要删除吗?')) {
+                    //     搞一个自定义属性data - id来保存id
+                    var id = $(this).attr('data-id');
+                    $.post({
+                        url: 'http://localhost:8000/admin/category_delete',
+                        data: {
+                            id: id
+                        },
+                        success: function (backData) {
+                            console.log(backData);
+                            // 4.删除成功后, 重新的再渲染一次数据
+                            that.parent().parent().remove();
+
+                        }
+                    });
+                };
+
+            });
+
+            // 1.编辑按钮也是动态生成的, 所以给他注册事件也要委托的方式注册.
+            // 2.在编辑逻辑里面, 要传过来id, 要告诉编辑逻辑编辑的是哪一个文章类别.
+            // 3.编辑操作分为2步, 一步是显示修改之前的信息, 一步是把修改后的数据获取后发送ajax请求去修改.\
+            // 4.新增和编辑使用的是同一个模态框, 所以模态框显示信息, 或者某些按钮要做一些修改
+            // 5.新增和编辑弹出的是同一个模态框, 那模态框里面的新增(保存)按钮要处理2套逻辑.
+
+            //注册点击事件
+            // 1.编辑按钮也是动态生成的, 所以给他注册事件也要委托的方式注册.
+            $('tbody').on('click', '.btn-edit', function () {
+
+
+                //事件处理函数
+                $('#addModal .modal-title').html('修改分类');
+                $('#addModal').modal('show');
+
+                var cataId = $(this).attr('data-id');
+                var cataName = $(this).parent().prev().prev().text();
+                var cataSlug = $(this).parent().prev().text();
+
+                // 2.在编辑逻辑里面, 要传过来id, 要告诉编辑逻辑编辑的是哪一个文章类别.
+                $('.modal-body .id').val(cataId);
+                $('.modal-body .name').val(cataName);
+                $('.modal-body .slug').val(cataSlug);
+
+
+                // 4.新增和编辑使用的是同一个模态框, 所以模态框显示信息, 或者某些按钮要做一些修改
+                $('#model_add').addClass('btn-success').text('保存');
+
+            });
+
 
 
 
