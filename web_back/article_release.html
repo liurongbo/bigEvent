@@ -15,6 +15,7 @@
     <script src="js/jedate/js/jedate.js"></script>
     <script src="js/tinymce/js/tinymce/tinymce.min.js"></script>
     <script src="js/tinymce/js/tinymce_setup.js"></script>
+    <script src="./js/template-web.js"></script>
 </head>
 
 <body>
@@ -33,6 +34,8 @@
                 <div class="form-group">
                     <label for="inputPassword3" class="col-sm-2 control-label">文章封面：</label>
                     <div class="col-sm-10">
+                        <img src="" alt="" style="height: 150px;">
+
                         <input type="file" id="exampleInputFile">
                     </div>
                 </div>
@@ -55,8 +58,7 @@
                         <div class="input-group">
                             <input type="text" class="form-control" placeholder="YYYY-MM-DD" id="dateinput">
                             <span class="input-group-btn">
-                                <button class="btn btn-default" type="button"
-                                    onclick="jeDate('#dateinput',{trigger:false,format: 'YYYY-MM-DD'})"><i
+                                <button class="btn btn-default" type="button" onclick="jeDate('#dateinput',{trigger:false,format: 'YYYY-MM-DD'})"><i
                                         class="iconfont icon-icondate"></i></button>
                             </span>
                         </div>
@@ -79,6 +81,57 @@
             </form>
         </div>
     </div>
+
+    <!-- 准一个模板 -->
+    <script id="tmp_cate" type="text/html">
+        {{each data v}}
+        <option value="{{v.id}}">{{v.name}}</option>
+        {{/each}}
+    </script>
+
+
+    <script>
+        /* 1.给选择图片的按钮change事件.
+        2.用files[0]获取选中的图片文件.
+        3.用URL.createObjectURL方法创建一个url出来
+        4.赋值给img
+        */
+
+        //图片预览
+        $('#exampleInputFile').on('change', function () {
+            //事件处理函数
+            var icon = this.files[0];
+            var url = URL.createObjectURL(icon);
+            $(this).prev().attr('src', url);
+
+        });
+
+
+        //文章类别获取
+        /*
+        1.一进来文章新增页面就发送ajax请求.获取到所有的文章类别数据
+        2.使用模板引擎渲染, 注意的是需要id, 就要使用value属性来放id
+        */
+        $.ajax({
+            url: 'http://localhost:8000/admin/category_search',
+            success: function (backData) {
+                if (backData.code == 200) {
+                    var resHtml = template('tmp_cate', backData);
+                    $('.form-control').html(resHtml);
+                }
+            }
+        });
+
+
+
+
+
+
+
+    </script>
+
+
+
 
 </body>
 
